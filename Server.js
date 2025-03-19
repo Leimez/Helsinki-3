@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 
-app.set('json spaces', 2); // Kaunistaa JSON-vastaukset
+app.set('json spaces', 2); 
 
 const persons = [
   { id: 1, name: 'John Doe', number: '123-456-7890' },
@@ -11,6 +11,17 @@ const persons = [
 
 app.get('/api/persons', (req, res) => {
   res.json(persons);
+});
+
+app.get('/api/persons/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const person = persons.find(p => p.id === id);
+
+  if (person) {
+    res.json(person);
+  } else {
+    res.status(404).send({ error: 'Person not found' });
+  }
 });
 
 app.get('/info', (req, res) => {
@@ -23,4 +34,5 @@ const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
 
