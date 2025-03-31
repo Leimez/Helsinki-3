@@ -3,7 +3,12 @@ const morgan = require('morgan');
 const app = express();
 
 app.use(express.json());
-app.use(morgan('tiny')); 
+
+morgan.token('post-data', (req) => {
+  return req.method === 'POST' ? JSON.stringify(req.body) : '';
+});
+
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'));
 
 const persons = [
   { id: 1, name: 'John Doe', number: '123-456-7890' },
@@ -13,35 +18,6 @@ const persons = [
 
 app.get('/api/persons', (req, res) => {
   res.json(persons);
-});
-
-app.get('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const person = persons.find(p => p.id === id);
-
-  if (person) {
-    res.json(person);
-  } else {
-    res.status(404).json({ error: 'Person not found' });
-  }
-});
-
-app.get('/info', (req, res) => {
-  const count = persons.length;
-  const date = new Date().toString();
-  res.send(`<p>Phonebook has info for ${count} people</p><p>${date}</p>`);
-});
-
-app.delete('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const index = persons.findIndex(p => p.id === id);
-
-  if (index !== -1) {
-    persons.splice(index, 1);
-    res.status(204).end();
-  } else {
-    res.status(404).json({ error: 'Person not found' });
-  }
 });
 
 app.post('/api/persons', (req, res) => {
@@ -64,11 +40,12 @@ app.post('/api/persons', (req, res) => {
   persons.push(newPerson);
   res.json(newPerson);
 });
- 
+
 const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
 
 
   
