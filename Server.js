@@ -11,44 +11,45 @@ app.use(express.static(path.join(__dirname, 'dist'), {
   extensions: ['html']
 }));
 
-app.get('/api/persons', async (req, res) => {
-  try {
-    const persons = await db.getAll();
-    res.json(persons);
-  } catch (error) {
-    res.status(500).json({ error: 'Error fetching persons' });
-  }
+app.get('/api/persons', async (req, res, next) => {
+  const persons = await db.getAll().catch(next);
+  if (persons) res.json(persons);
 });
 
-app.post('/api/persons', async (req, res) => {
+app.post('/api/persons', async (req, res, next) => {
   console.log('Received POST data:', req.body);
   const newPerson = req.body;
   if (!newPerson.name || !newPerson.number) {
     return res.status(400).json({ error: 'Name or number missing' });
   }
-  try {
-    const savedPerson = await db.create(newPerson);
-    res.json(savedPerson);
-  } catch (error) {
-    res.status(500).json({ error: 'Error creating person' });
-  }
+  const savedPerson = await db.create(newPerson).catch(next);
+  if (savedPerson) res.json(savedPerson);
 });
 
-app.delete('/api/persons/:id', async (req, res) => {
-  try {
-    const deletedPerson = await db.remove(req.params.id);
-    if (!deletedPerson) {
-      return res.status(404).json({ error: 'Person not found' });
-    }
-    res.status(200).json(deletedPerson);
-  } catch (error) {
-    res.status(500).json({ error: 'Error deleting person' });
+app.delete('/api/persons/:id', async (req, res, next) => {
+  const deletedPerson = await db.remove(req.params.id).catch(next);
+  if (!deletedPerson) {
+    return res.status(404).json({ error: 'Person not found' });
   }
+  res.status(200).json(deletedPerson);
 });
 
 const PORT = process.env.PORT || 3001;
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error(error.stack);
+  
+  if (error.name === 'ValidationError') {
+    return res.status(400).json({ error: error.message });
+  }
+  
+  res.status(500).json({ 
+    error: error.message || 'Something went wrong' 
+  });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
