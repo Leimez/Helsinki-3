@@ -34,12 +34,23 @@ app.delete('/api/persons/:id', async (req, res, next) => {
   res.status(200).json(deletedPerson);
 });
 
+app.put('/api/persons/:id', async (req, res, next) => {
+  const { number } = req.body;
+  if (!number) {
+    return res.status(400).json({ error: 'Number missing' });
+  }
+  const updatedPerson = await db.update(req.params.id, { number }).catch(next);
+  if (!updatedPerson) {
+    return res.status(404).json({ error: 'Person not found' });
+  }
+  res.json(updatedPerson);
+});
+
 const PORT = process.env.PORT || 3001;
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Error handling middleware
 app.use((error, req, res, next) => {
   console.error(error.stack);
   
@@ -56,7 +67,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });

@@ -25,8 +25,13 @@ const remove = async (id) => {
   return await Person.findByIdAndRemove(id);
 };
 
+const update = async (id, newData) => {
+  return await Person.findByIdAndUpdate(id, newData, { new: true });
+};
+
 module.exports = {
   getAll,
   create,
-  remove
+  remove,
+  update
 };
