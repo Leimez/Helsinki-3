@@ -36,8 +36,11 @@ app.post('/api/persons', async (req, res) => {
 
 app.delete('/api/persons/:id', async (req, res) => {
   try {
-    await db.remove(req.params.id);
-    res.status(204).end();
+    const deletedPerson = await db.remove(req.params.id);
+    if (!deletedPerson) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+    res.status(200).json(deletedPerson);
   } catch (error) {
     res.status(500).json({ error: 'Error deleting person' });
   }

@@ -42,6 +42,10 @@ const App = () => {
         .remove(id)
         .then(() => {
           setPersons(persons.filter(p => p.id !== id));
+        })
+        .catch(error => {
+          console.error('Error deleting person:', error);
+          alert('Could not delete person. Please try again.');
         });
     }
   };
