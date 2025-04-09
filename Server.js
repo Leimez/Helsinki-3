@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const db = require('./services/db');
 
 const app = express();
 app.use(express.json());
@@ -10,31 +11,36 @@ app.use(express.static(path.join(__dirname, 'dist'), {
   extensions: ['html']
 }));
 
-let persons = [
-  { id: 1, name: 'John Doe', number: '123-456-7890' },
-  { id: 2, name: 'Jane Smith', number: '234-567-8901' },
-  { id: 3, name: 'Bob Johnson', number: '345-678-9012' }
-];
-
-app.get('/api/persons', (req, res) => {
-  res.json(persons);
+app.get('/api/persons', async (req, res) => {
+  try {
+    const persons = await db.getAll();
+    res.json(persons);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching persons' });
+  }
 });
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', async (req, res) => {
   console.log('Received POST data:', req.body);
   const newPerson = req.body;
   if (!newPerson.name || !newPerson.number) {
     return res.status(400).json({ error: 'Name or number missing' });
   }
-  newPerson.id = Math.floor(Math.random() * 1000000);
-  persons.push(newPerson);
-  res.json(newPerson);
+  try {
+    const savedPerson = await db.create(newPerson);
+    res.json(savedPerson);
+  } catch (error) {
+    res.status(500).json({ error: 'Error creating person' });
+  }
 });
 
-app.delete('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id);
-  persons = persons.filter(person => person.id !== id);
-  res.status(204).end();
+app.delete('/api/persons/:id', async (req, res) => {
+  try {
+    await db.remove(req.params.id);
+    res.status(204).end();
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting person' });
+  }
 });
 
 const PORT = process.env.PORT || 3001;
