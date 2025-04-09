@@ -67,6 +67,24 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 
+app.get('/api/persons/:id', async (req, res, next) => {
+  const person = await db.getById(req.params.id).catch(next);
+  if (!person) {
+    return res.status(404).json({ error: 'Person not found' });
+  }
+  res.json(person);
+});
+
+app.get('/info', async (req, res, next) => {
+  const count = await db.getCount().catch(next);
+  res.send(`
+    <div>
+      <p>Phonebook has info for ${count} people</p>
+      <p>${new Date()}</p>
+    </div>
+  `);
+});
+
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
