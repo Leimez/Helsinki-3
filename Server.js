@@ -1,9 +1,14 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
-app.use(cors()); 
+app.use(cors());
+app.use(express.static(path.join(__dirname, 'dist'), { 
+  index: 'index.html',
+  extensions: ['html']
+}));
 
 let persons = [
   { id: 1, name: 'John Doe', number: '123-456-7890' },
@@ -33,6 +38,10 @@ app.delete('/api/persons/:id', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
