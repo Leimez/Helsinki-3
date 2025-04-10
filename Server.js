@@ -11,86 +11,98 @@ app.use(express.static(path.join(__dirname, 'dist'), {
   extensions: ['html']
 }));
 
-app.get('/api/persons', async (req, res, next) => {
-  const persons = await db.getAll().catch(next);
-  if (persons) res.json(persons);
+app.get('/api/persons', async (req, res) => {
+  try {
+    const persons = await db.getAll();
+    res.json(persons);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching persons' });
+  }
 });
 
-app.post('/api/persons', async (req, res, next) => {
+app.post('/api/persons', async (req, res) => {
   console.log('Received POST data:', req.body);
   const newPerson = req.body;
   if (!newPerson.name || !newPerson.number) {
     return res.status(400).json({ error: 'Name or number missing' });
   }
-  const savedPerson = await db.create(newPerson).catch(next);
-  if (savedPerson) res.json(savedPerson);
-});
-
-app.delete('/api/persons/:id', async (req, res, next) => {
-  const deletedPerson = await db.remove(req.params.id).catch(next);
-  if (!deletedPerson) {
-    return res.status(404).json({ error: 'Person not found' });
+  try {
+    const savedPerson = await db.create(newPerson);
+    res.json(savedPerson);
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Error creating person' });
   }
-  res.status(200).json(deletedPerson);
 });
 
-app.put('/api/persons/:id', async (req, res, next) => {
+app.delete('/api/persons/:id', async (req, res) => {
+  try {
+    const deletedPerson = await db.remove(req.params.id);
+    if (!deletedPerson) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+    res.status(200).json(deletedPerson);
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting person' });
+  }
+});
+
+app.put('/api/persons/:id', async (req, res) => {
   const { number } = req.body;
   if (!number) {
     return res.status(400).json({ error: 'Number missing' });
   }
-  const updatedPerson = await db.update(req.params.id, { number }).catch(next);
-  if (!updatedPerson) {
-    return res.status(404).json({ error: 'Person not found' });
+  try {
+    const updatedPerson = await db.update(req.params.id, { number });
+    if (!updatedPerson) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+    res.json(updatedPerson);
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating person' });
   }
-  res.json(updatedPerson);
 });
 
-const PORT = process.env.PORT || 3001;
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
-
-app.use((error, req, res, next) => {
-  console.error(error.stack);
-  
-  if (error.name === 'ValidationError') {
-    return res.status(400).json({ error: error.message });
+app.get('/api/persons/:id', async (req, res) => {
+  try {
+    const person = await db.getById(req.params.id);
+    if (!person) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+    res.json(person);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching person' });
   }
-  
-  res.status(500).json({ 
-    error: error.message || 'Something went wrong' 
-  });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-app.get('/api/persons/:id', async (req, res, next) => {
-  const person = await db.getById(req.params.id).catch(next);
-  if (!person) {
-    return res.status(404).json({ error: 'Person not found' });
+app.get('/info', async (req, res) => {
+  try {
+    const count = await db.getCount();
+    res.send(`
+      <div>
+        <p>Phonebook has info for ${count} people</p>
+        <p>${new Date()}</p>
+      </div>
+    `);
+  } catch (error) {
+    res.status(500).send('Error getting info');
   }
-  res.json(person);
-});
-
-app.get('/info', async (req, res, next) => {
-  const count = await db.getCount().catch(next);
-  res.send(`
-    <div>
-      <p>Phonebook has info for ${count} people</p>
-      <p>${new Date()}</p>
-    </div>
-  `);
 });
 
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
+app.use((error, req, res, next) => {
+  console.error(error.stack);
+  res.status(500).json({ 
+    error: error.message || 'Something went wrong' 
+  });
+});
 
-
-
-  
-
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
