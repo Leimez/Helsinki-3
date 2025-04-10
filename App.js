@@ -5,6 +5,7 @@ const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState('');
   const [newNumber, setNewNumber] = useState('');
+  const [errorMessage, setErrorMessage] = useState(null);
 
   useEffect(() => {
     personsService
@@ -25,6 +26,12 @@ const App = () => {
         setPersons(persons.concat(returnedPerson));
         setNewName('');
         setNewNumber('');
+        setErrorMessage(`Added ${returnedPerson.name}`);
+        setTimeout(() => setErrorMessage(null), 5000);
+      })
+      .catch(error => {
+        setErrorMessage(error.message || 'Validation failed');
+        setTimeout(() => setErrorMessage(null), 5000);
       });
   };
 
@@ -53,6 +60,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      {errorMessage && <div className="error">{errorMessage}</div>}
       <form onSubmit={addPerson}>
         <div>
           name: <input value={newName} onChange={handleNameChange} />
